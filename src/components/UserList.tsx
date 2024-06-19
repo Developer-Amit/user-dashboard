@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import User from '../types/User';
-import '../css/UserList.css';
 import { fetchUsers } from '../services/user-api';
-import { Link } from 'react-router-dom';
+import { UserListContainer, SearchContainer, SearchInput, UserCard, UserCardLink, UserImage, LoadMoreContainer, LoadMoreButton } from '../css/UserList.styles';
+
 
 const UserList: React.FC = () => {
   const [query, setQuery] = useState('');
@@ -29,40 +29,38 @@ const UserList: React.FC = () => {
 
   return (
     <>
-      <div className="search-container">
-        <input
+      <SearchContainer>
+        <SearchInput
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search users"
-          className="search-input"
         />
         {error && <div>Error: {error.message}</div>}
-      </div>
-      <div className="user-list">
+      </SearchContainer>
+      <UserListContainer>
         {!error && data && data.pages.map((page, index) => (
           <React.Fragment key={index}>
             {page.map((user: User) => (
-              <Link key={user.login.uuid} to={`/user/${user.login.uuid}`} className="user-card-link">
-                <div className="user-card">
-                  <img src={user.picture.medium} alt={user.name.first} className="user-image" />
+              <UserCardLink key={user.login.uuid} to={`/user/${user.login.uuid}`}>
+                <UserCard>
+                  <UserImage src={user.picture.medium} alt={user.name.first} />
                   <h3>{user.name.first} {user.name.last}</h3>
                   <p>{user.email}</p>
-                </div>
-              </Link>
+                </UserCard>
+              </UserCardLink>
             ))}
           </React.Fragment>
         ))}
-      </div>
-      <div className="load-more-container">
-        <button
+      </UserListContainer>
+      <LoadMoreContainer>
+        <LoadMoreButton
           onClick={() => fetchNextPage()}
           disabled={!hasNextPage || isFetchingNextPage}
-          className="load-more-button"
         >
           {isFetchingNextPage ? "Loading more..." : hasNextPage ? "Load More" : "Nothing more to load"}
-        </button>
-      </div>
+        </LoadMoreButton>
+      </LoadMoreContainer>
       <div>{isFetching && !isFetchingNextPage ? "Fetching..." : null}</div>
     </>
   );

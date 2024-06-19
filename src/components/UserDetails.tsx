@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import User from '../types/User';
-import '../css/UserDetails.css';
 import { fetchUserDetails } from '../services/user-api';
-import { Link } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
+import {UserDetailsContainer, UserDetailsCard, BackIcon, UserDetailsImage} from '../css/UserDetails.styles';
+
 const UserDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const [user, setUser] = useState<User | null>(null);
@@ -36,17 +36,19 @@ const UserDetails: React.FC = () => {
   if (!user) return <div>User not found</div>;
 
   return (
-    <div className='userDetails'>
-      <Link to="/" className='backIcon'> <ArrowLeft />Back to User List</Link>
-      <div className="user-details-card">
-      <img src={user.picture.large} alt={user.name.first} className="user-details-image" />
-      <h2>{user.name.first} {user.name.last}</h2>
-      <p>{user.email}</p>
-      <p>{user.location.city}, {user.location.state}, {user.location.country}</p>
-      <p>Phone: {user.phone}</p>
-      <p>Cell: {user.cell}</p>
-    </div>
-    </div>
+    <UserDetailsContainer>
+      <BackIcon to="/">
+        <ArrowLeft />Back to User List
+      </BackIcon>
+      <UserDetailsCard>
+        <UserDetailsImage src={user.picture.large} alt={user.name.first} />
+        <h2>{user.name.first} {user.name.last}</h2>
+        <p>{user.email}</p>
+        <p>{user.location.city}, {user.location.state}, {user.location.country}</p>
+        <p>Phone: {user.phone}</p>
+        <p>Cell: {user.cell}</p>
+      </UserDetailsCard>
+    </UserDetailsContainer>
   );
 };
 
