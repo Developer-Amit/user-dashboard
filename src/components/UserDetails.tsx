@@ -1,44 +1,35 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { ArrowLeft } from 'lucide-react';
 import User from '../types/User';
 import { fetchUserDetails } from '../services/user-api';
-import { ArrowLeft } from 'lucide-react';
-import {UserDetailsContainer, UserDetailsCard, BackIcon, UserDetailsImage} from '../css/UserDetails.styles';
+import Loader from './Loader';
+import {
+  UserDetailsContainer,
+  UserDetailsCard,
+  BackIcon,
+  UserDetailsImage,
+} from '../css/UserDetails.styles';
 
 const UserDetails: React.FC = () => {
-  const { id } = useParams<{ id: string }>();
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { id = ''} = useParams<{ id: string }>();
 
-  useEffect(() => {
-    const getUserDetails = async () => {
-      if (id) {
-        try {
-          const userData = await fetchUserDetails(id);
-          setUser(userData);
-        } catch (err) {
-          setError('Failed to fetch user details');
-        } finally {
-          setLoading(false);
-        }
-      } else {
-        setError('User ID is not provided');
-        setLoading(false);
-      }
-    };
+  const { data: user, isLoading, isError, error } = useQuery({
+    queryKey: ['userDetails', id],
+    queryFn: () => fetchUserDetails(id),
+    refetchOnWindowFocus: false,
+    staleTime: 1000 * 60,
+  })
 
-    getUserDetails();
-  }, [id]);
-
-  if (loading) return <div>Loading...</div>;
-  if (error) return <div>{error}</div>;
+  if (isLoading) return <Loader />;
+  if (isError) return <div>{error.message}</div>;
   if (!user) return <div>User not found</div>;
 
   return (
     <UserDetailsContainer>
       <BackIcon to="/">
-        <ArrowLeft />Back to User List
+        <ArrowLeft /> Back to User List
       </BackIcon>
       <UserDetailsCard>
         <UserDetailsImage src={user.picture.large} alt={user.name.first} />

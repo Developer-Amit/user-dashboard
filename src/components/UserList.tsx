@@ -1,12 +1,32 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, memo } from 'react';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import User from '../types/User';
 import { fetchUsers } from '../services/user-api';
-import { UserListContainer, SearchContainer, SearchInput, UserCard, UserCardLink, UserImage, LoadMoreContainer, LoadMoreButton } from '../css/UserList.styles';
+import {
+  UserListContainer,
+  SearchContainer,
+  SearchInput,
+  UserCard,
+  UserCardLink,
+  UserImage,
+  LoadMoreContainer,
+  LoadMoreButton,
+} from '../css/UserList.styles';
+import { debounce } from '../utils/debounce';
+import Loader from './Loader';
 
+const UserListItem = memo(({ user }: { user: User }) => (
+  <div className="user-list-item">
+    <UserImage src={user.picture.medium} alt={user.name.first} />
+    <p>{user.name.first} {user.name.last}</p>
+    <p>{user.email}</p>
+  </div>
+));
 
 const UserList: React.FC = () => {
   const [query, setQuery] = useState('');
+  const [inputValue, setInputValue] = useState('');
+
   const {
     fetchNextPage,
     hasNextPage,
@@ -19,9 +39,24 @@ const UserList: React.FC = () => {
     queryKey: ['users', query],
     queryFn: ({ pageParam = 1 }) => fetchUsers(pageParam, query),
     initialPageParam: 1,
-    getNextPageParam: (lastPage, allPages) => lastPage.nextCursor,
-    getPreviousPageParam: (firstPage, allPages) => firstPage.prevCursor,
+    getNextPageParam: (lastPage) => lastPage?.info?.next ?? undefined,
+    refetchOnWindowFocus: false, // to remove flickering on page refresh
+    staleTime: 1000 * 60, // Data is fresh for 1 minute
   });
+
+  const debouncedSetQuery = useMemo(
+    () =>
+      debounce((value: string) => {
+        setQuery(value);
+      }, 800),
+    []
+  );
+
+  const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const value = event.target.value;
+    setInputValue(value);
+    debouncedSetQuery(value);
+  };
 
   useEffect(() => {
     refetch();
@@ -29,11 +64,12 @@ const UserList: React.FC = () => {
 
   return (
     <>
+      {(isFetching && !isFetchingNextPage) && <Loader />}
       <SearchContainer>
         <SearchInput
           type="text"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          value={inputValue}
+          onChange={handleChange}
           placeholder="Search users"
         />
         {error && <div>Error: {error.message}</div>}
@@ -41,12 +77,10 @@ const UserList: React.FC = () => {
       <UserListContainer>
         {!error && data && data.pages.map((page, index) => (
           <React.Fragment key={index}>
-            {page.map((user: User) => (
+            {page.results.map((user: User) => (
               <UserCardLink key={user.login.uuid} to={`/user/${user.login.uuid}`}>
                 <UserCard>
-                  <UserImage src={user.picture.medium} alt={user.name.first} />
-                  <h3>{user.name.first} {user.name.last}</h3>
-                  <p>{user.email}</p>
+                  <UserListItem user={user} />
                 </UserCard>
               </UserCardLink>
             ))}
@@ -66,4 +100,4 @@ const UserList: React.FC = () => {
   );
 };
 
-export default UserList;
+export default memo(UserList);
